@@ -42,7 +42,7 @@ def sftp_to_drive():
         SCOPES = ['https://www.googleapis.com/auth/drive']
         credentials = service_account.Credentials.from_service_account_file(
             '/tmp/credentials.json', scopes=SCOPES)
-        delegated_credentials = credentials.with_subject('your.email@gmail.com')  # Replace with your email
+        delegated_credentials = credentials.with_subject('rost0404@gmail.com')  # Replace with your email
         drive_service = build('drive', 'v3', credentials=delegated_credentials)
 
         ssh = paramiko.SSHClient()
