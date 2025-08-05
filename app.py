@@ -1,23 +1,23 @@
 from flask import Flask, request, jsonify
 import paramiko
-from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload  # Add this line
+from googleapiclient.http import MediaFileUpload
 import os
 import tempfile
 import traceback
 
-app = Flask(__name__)  # Define app first
+app = Flask(__name__)
 
 @app.route('/sftp-to-drive', methods=['POST'])
 def sftp_to_drive():
-    print("Received request")  # Debug log
+    print("Received request")
     try:
         data = request.get_json()
         if not data:
             print("No JSON data received")
             return jsonify({"error": "No JSON data"}), 400
-        print(f"Received data: {data}")  # Log the payload
+        print(f"Received data: {data}")
         sftp_host = data.get('sftpHost')
         sftp_port = data.get('sftpPort', 22)
         sftp_user = data.get('sftpUser')
@@ -30,6 +30,7 @@ def sftp_to_drive():
             print("Missing required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
+        # Load service account credentials
         credentials_json = os.environ.get('GOOGLE_CREDENTIALS')
         if not credentials_json:
             print("Credentials not found")
@@ -37,8 +38,12 @@ def sftp_to_drive():
         with open("/tmp/credentials.json", "w") as f:
             f.write(credentials_json)
 
-        creds = Credentials.from_service_account_file("/tmp/credentials.json", scopes=["https://www.googleapis.com/auth/drive"])
-        drive_service = build("drive", "v3", credentials=creds)
+        # Delegate to your personal account (replace with your email)
+        SCOPES = ['https://www.googleapis.com/auth/drive']
+        credentials = service_account.Credentials.from_service_account_file(
+            '/tmp/credentials.json', scopes=SCOPES)
+        delegated_credentials = credentials.with_subject('your.email@gmail.com')  # Replace with your email
+        drive_service = build('drive', 'v3', credentials=delegated_credentials)
 
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -61,10 +66,10 @@ def sftp_to_drive():
         ssh.close()
         return jsonify({"message": "Files uploaded successfully"}), 200
     except Exception as e:
-        print(f"Error: {traceback.format_exc()}")  # Full stack trace
+        print(f"Error: {traceback.format_exc()}")
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT"))  # Use Render's PORT
-    print(f"Starting app on port {port}")  # Debug port
+    port = int(os.environ.get("PORT"))
+    print(f"Starting app on port {port}")
     app.run(host="0.0.0.0", port=port)
