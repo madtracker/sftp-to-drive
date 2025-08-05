@@ -19,7 +19,7 @@ def sftp_to_drive():
     file_names = data.get('fileNames', [])
     folder_id = data.get('folderId')
 
-    # Load credentials (uploaded as environment variable or file)
+    # Load credentials
     credentials_json = os.environ.get('GOOGLE_CREDENTIALS')
     if not credentials_json:
         return jsonify({"error": "Credentials not found"}), 400
@@ -48,4 +48,5 @@ def sftp_to_drive():
     return jsonify({"message": "Files uploaded successfully"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT"))  # Remove default 5000
+    app.run(host="0.0.0.0", port=port)
