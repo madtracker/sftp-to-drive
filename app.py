@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import paramiko
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import os
@@ -30,20 +30,20 @@ def sftp_to_drive():
             print("Missing required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
-        # Load service account credentials
-        credentials_json = os.environ.get('GOOGLE_CREDENTIALS')
+        # Load user OAuth credentials
+        credentials_json = os.environ.get('GOOGLE_CREDENTIALS_USER')
         if not credentials_json:
-            print("Credentials not found")
-            return jsonify({"error": "Credentials not found"}), 400
-        with open("/tmp/credentials.json", "w") as f:
+            print("User credentials not found")
+            return jsonify({"error": "User credentials not found"}), 400
+        with open("/tmp/credentials_user.json", "w") as f:
             f.write(credentials_json)
+        credentials = Credentials.from_authorized_user_file('/tmp/credentials_user.json', ['https://www.googleapis.com/auth/drive'])
 
-        # Delegate to your personal account (replace with your email)
-        SCOPES = ['https://www.googleapis.com/auth/drive']
-        credentials = service_account.Credentials.from_service_account_file(
-            '/tmp/credentials.json', scopes=SCOPES)
-        delegated_credentials = credentials.with_subject('rost0404@gmail.com')  # Replace with your email
-        drive_service = build('drive', 'v3', credentials=delegated_credentials)
+        # Refresh token if expired
+        if credentials.expired and credentials.refresh_token:
+            credentials.refresh()
+
+        drive_service = build('drive', 'v3', credentials=credentials)
 
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
